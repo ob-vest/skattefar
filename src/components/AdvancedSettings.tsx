@@ -92,29 +92,45 @@ export function AdvancedSettings({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="commuteKm">Afstand hjem-arbejde (km tur/retur)</Label>
-          <Input
-            id="commuteKm"
-            inputMode="decimal"
-            type="text"
-            placeholder="fx 60"
-            value={commuteKm}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onCommuteKm(e.target.value)
-            }
-          />
+          <div className="relative">
+            <Input
+              id="commuteKm"
+              inputMode="text"
+              type="decimal"
+              placeholder="fx 60"
+              value={commuteKm}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onCommuteKm(e.target.value)
+              }
+              className="pr-9"
+              step="any"
+              lang="da-DK"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">
+              km
+            </span>
+          </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor="workDays">Arbejdsdage pr. år</Label>
-          <Input
-            id="workDays"
-            inputMode="numeric"
-            type="text"
-            placeholder="226"
-            value={workDays}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onWorkDays(e.target.value)
-            }
-          />
+          <div className="relative">
+            <Input
+              id="workDays"
+              inputMode="text"
+              type="decimal"
+              placeholder="226"
+              value={workDays}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onWorkDays(e.target.value)
+              }
+              className="pr-12"
+              step="any"
+              lang="da-DK"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">
+              dage
+            </span>
+          </div>
         </div>
       </div>
 
@@ -140,32 +156,48 @@ export function AdvancedSettings({
         </div>
         <div className="space-y-2">
           <Label htmlFor="atpHours">Månedlige arbejdstimer</Label>
-          <Input
-            id="atpHours"
-            inputMode="numeric"
-            type="text"
-            placeholder="fx 160"
-            value={atpHours}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onAtpHours(e.target.value)
-            }
-          />
+          <div className="relative">
+            <Input
+              id="atpHours"
+              inputMode="text"
+              type="decimal"
+              placeholder="fx 160"
+              value={atpHours}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onAtpHours(e.target.value)
+              }
+              className="pr-12"
+              step="any"
+              lang="da-DK"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">
+              timer
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="employeePensionRate">Eget pensionsbidrag (%)</Label>
-          <Input
-            id="employeePensionRate"
-            inputMode="decimal"
-            type="text"
-            placeholder="fx 12"
-            value={employeePensionRate}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onEmployeePensionRate(e.target.value)
-            }
-          />
+          <div className="relative">
+            <Input
+              id="employeePensionRate"
+              inputMode="text"
+              type="decimal"
+              placeholder="fx 12"
+              value={employeePensionRate}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onEmployeePensionRate(e.target.value)
+              }
+              className="pr-9"
+              step="any"
+              lang="da-DK"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">
+              %
+            </span>
+          </div>
         </div>
       </div>
     </div>

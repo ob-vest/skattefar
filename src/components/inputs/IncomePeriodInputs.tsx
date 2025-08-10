@@ -37,14 +37,22 @@ export function IncomePeriodInputs({
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-2">
         <Label htmlFor="gross">Løn før skat</Label>
-        <Input
-          id="gross"
-          inputMode="decimal"
-          type="text"
-          placeholder={period === "month" ? "fx 45.000" : "fx 540.000"}
-          value={displayGross}
-          onChange={handleGrossChange}
-        />
+        <div className="relative">
+          <Input
+            id="gross"
+            inputMode="decimal"
+            type="text"
+            placeholder={period === "month" ? "fx 45.000" : "fx 540.000"}
+            value={displayGross}
+            onChange={handleGrossChange}
+            className="pr-9"
+            step="any"
+            lang="da-DK"
+          />
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">
+            kr.
+          </span>
+        </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="period">Periode</Label>
