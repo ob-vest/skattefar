@@ -13,36 +13,36 @@ export interface TaxInput {
   personalAllowanceAnnual?: number; // in DKK/year, default 51,600
 
   // Deductions
-  applyEmploymentDeduction?: boolean; // beskæftigelsesfradrag, default true
+  applyEmploymentDeduction?: boolean; // Employment deduction (beskæftigelsesfradrag), default true
   employmentDeductionRate?: number; // ~0.123 in 2025
   employmentDeductionCapAnnual?: number; // ~55_600 in 2025
-  singleParent?: boolean; // enlig forsørger
+  singleParent?: boolean; // Single parent
   singleParentEmploymentSupplementRate?: number; // ~0.115 in 2025
   singleParentEmploymentSupplementCapAnnual?: number; // ~48_300 in 2025
 
-  applyJobDeduction?: boolean; // jobfradrag, default true
+  applyJobDeduction?: boolean; // Job deduction (jobfradrag), default true
   jobDeductionRate?: number; // ~0.045 in 2025
   jobDeductionThresholdAnnual?: number; // ~224_500 in 2025
   jobDeductionCapAnnual?: number; // ~2_900 in 2025
 
-  // Befordringsfradrag (pendlerfradrag)
-  commutingDistanceKmDaily?: number; // total daglig afstand (tur/retur)
+  // Commuting deduction (Befordringsfradrag, pendlerfradrag)
+  commutingDistanceKmDaily?: number; // total daily distance (round trip)
   commutingWorkingDaysAnnual?: number; // default 226
-  commutingRateLow?: number; // 25-120 km pr. dag, kr./km (2025 ~2.23)
-  commutingRateHigh?: number; // >120 km pr. dag, kr./km (2025 ~1.12)
+  commutingRateLow?: number; // 25-120 km per day, DKK/km (2025 ~2.23)
+  commutingRateHigh?: number; // >120 km per day, DKK/km (2025 ~1.12)
   commutingLowThresholdKm?: number; // 24 km
   commutingHighThresholdKm?: number; // 120 km
 
-  // ATP (Arbejdsmarkedets Tillægspension) – medarbejderens andel
+  // ATP (Arbejdsmarkedets Tillægspension) – employee contribution
   atpSector?: "private" | "public"; // default "private"
-  atpMonthlyHours?: number; // default 160 (fuldtid)
+  atpMonthlyHours?: number; // default 160 (full time)
 
-  // Eget pensionsbidrag (procent af bruttoløn)
+  // Employee pension contribution (percentage of gross salary)
   employeePensionRate?: number; // 0-1, default 0
 
-  // Store bededag kompensation
+  // Store Bededag (Great Prayer Day) compensation
   applyStoreBededagCompensation?: boolean; // default false
-  storeBededagCompensationRate?: number; // 0-1, default 0.0045 (0,45 %)
+  storeBededagCompensationRate?: number; // 0-1, default 0.0045 (0.45%)
 }
 
 export interface TaxBreakdown {
@@ -61,11 +61,11 @@ export interface TaxBreakdown {
   };
   deductions: {
     personalAllowanceAnnual: number;
-    employmentDeductionAnnual: number; // beskæftigelsesfradrag
-    singleParentEmploymentSupplementAnnual: number; // ekstra beskæftigelsesfradrag (enlig)
-    jobDeductionAnnual: number; // jobfradrag
-    commutingDeductionAnnual: number; // befordringsfradrag
-    pensionContributionAnnual: number; // eget pensionsbidrag (fradrag)
+    employmentDeductionAnnual: number; // employment deduction (beskæftigelsesfradrag)
+    singleParentEmploymentSupplementAnnual: number; // extra employment deduction (single parent)
+    jobDeductionAnnual: number; // job deduction (jobfradrag)
+    commutingDeductionAnnual: number; // commuting deduction (Befordringsfradrag)
+    pensionContributionAnnual: number; // employee pension contribution (deduction)
     totalDeductionsAnnual: number; // sum of above
   };
   taxable: {
@@ -112,7 +112,7 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
     jobDeductionThresholdAnnual = 224_500,
     jobDeductionCapAnnual = 2_900,
 
-    // defaults for befordringsfradrag (2025)
+    // defaults for Befordringsfradrag (commuting deduction, 2025)
     commutingDistanceKmDaily = 0,
     commutingWorkingDaysAnnual = 226,
     commutingRateLow = 2.23,
@@ -123,7 +123,7 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
     // pension
     employeePensionRate = 0,
 
-    // store bededag kompensation
+    // Store Bededag compensation
     applyStoreBededagCompensation = false,
     storeBededagCompensationRate = 0.0045,
   } = input;
@@ -131,7 +131,7 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
   const grossIncomeAnnualBase =
     period === "month" ? grossIncome * 12 : grossIncome;
 
-  // Store bededag kompensation beregnes som procent af årsløn (brutto)
+  // Store Bededag compensation is calculated as a percentage of annual gross salary
   const storeBededagCompensationAnnual = applyStoreBededagCompensation
     ? Math.max(
         0,
@@ -143,7 +143,7 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
   const grossIncomeAnnual =
     grossIncomeAnnualBase + storeBededagCompensationAnnual;
 
-  // Egen pensionsindbetaling (procent af bruttoløn) – fradragsberettiget
+  // Employee pension contribution (percentage of gross salary) – tax-deductible
   const normalizedEmployeePensionRate = Math.max(
     0,
     Math.min(1, employeePensionRate)
@@ -151,15 +151,7 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
   const employeePensionContributionAnnual =
     grossIncomeAnnual * normalizedEmployeePensionRate;
 
-  // AM-bidrag beregnes af bruttoløn fratrukket egen pension
-  const amBaseAnnual = Math.max(
-    0,
-    grossIncomeAnnual - employeePensionContributionAnnual
-  );
-  const amContributionAnnual = Math.max(0, amBaseAnnual * amContributionRate);
-  const afterAMAnnual = Math.max(0, grossIncomeAnnual - amContributionAnnual);
-
-  // ATP medarbejder-bidrag (månedligt -> årligt)
+  // ATP employee contribution (monthly -> annual)
   const atpSector = input.atpSector ?? "private";
   const atpMonthlyHours = input.atpMonthlyHours ?? 160;
   let atpEmployeeMonthly = 0;
@@ -169,13 +161,23 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
     else if (atpMonthlyHours >= 39) atpEmployeeMonthly = 33.0;
     else atpEmployeeMonthly = 0;
   } else {
-    // offentlig
+    // public sector
     if (atpMonthlyHours >= 117) atpEmployeeMonthly = 66.6;
     else if (atpMonthlyHours >= 78) atpEmployeeMonthly = 44.4;
     else if (atpMonthlyHours >= 39) atpEmployeeMonthly = 22.2;
     else atpEmployeeMonthly = 0;
   }
   const atpEmployeeContributionAnnual = atpEmployeeMonthly * 12;
+
+  // AM contribution is calculated on income after ATP and employee pension
+  const amBaseAnnual = Math.max(
+    0,
+    grossIncomeAnnual -
+      atpEmployeeContributionAnnual -
+      employeePensionContributionAnnual
+  );
+  const amContributionAnnual = Math.max(0, amBaseAnnual * amContributionRate);
+  const afterAMAnnual = Math.max(0, grossIncomeAnnual - amContributionAnnual);
 
   // Deductions (fradrag)
   const employmentDeductionAnnual = applyEmploymentDeduction
@@ -199,7 +201,7 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
     ? Math.min(jobDeductionEligible * jobDeductionRate, jobDeductionCapAnnual)
     : 0;
 
-  // Befordringsfradrag (dagligt, baseret på total daglig afstand tur/retur)
+  // Befordringsfradrag (daily, based on total daily round-trip distance)
   const dailyKm = Math.max(0, commutingDistanceKmDaily);
   const band1Km = Math.max(
     0,
@@ -230,8 +232,13 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
   // State bottom tax on the full taxable income
   const stateBottomTaxAnnual = taxableIncomeAnnual * bottomStateTaxRate;
 
-  // State top tax only on amount above threshold (threshold applies to after-AM income)
-  const topBase = Math.max(0, afterAMAnnual - topTaxThresholdAnnual);
+  // State top tax only on amount above threshold
+  // Top tax is calculated on personal income after AM and deductions in personal income (e.g., pension)
+  const topPersonalIncomeAnnual = Math.max(
+    0,
+    afterAMAnnual - employeePensionContributionAnnual
+  );
+  const topBase = Math.max(0, topPersonalIncomeAnnual - topTaxThresholdAnnual);
   const stateTopTaxAnnual = topBase * topStateTaxRate;
 
   // Municipal and optional church tax on taxable income

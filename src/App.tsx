@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { computeTaxBreakdown, type Period } from "@/lib/tax";
 import { MUNICIPALITIES } from "@/lib/municipalities";
 import { cn } from "@/lib/utils";
+import { Info } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -29,13 +30,58 @@ function formatPct(rate: number): string {
   }).format(rate);
 }
 
+function AnimatedNumber({
+  value,
+  format = (n: number) => String(Math.round(n)),
+  duration = 450,
+  className,
+}: {
+  value: number;
+  format?: (n: number) => string;
+  duration?: number;
+  className?: string;
+}) {
+  const [displayed, setDisplayed] = useState<number>(value);
+  const animationFrameRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const fromValueRef = useRef<number>(value);
+
+  useEffect(() => {
+    // Start animation from the current displayed value
+    fromValueRef.current = displayed;
+    if (animationFrameRef.current)
+      cancelAnimationFrame(animationFrameRef.current);
+    startTimeRef.current = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed = now - startTimeRef.current;
+      const t = Math.min(1, elapsed / duration);
+      // Ease-out cubic for a smooth finish
+      const eased = 1 - Math.pow(1 - t, 3);
+      const next =
+        fromValueRef.current + (value - fromValueRef.current) * eased;
+      setDisplayed(next);
+      if (t < 1) {
+        animationFrameRef.current = requestAnimationFrame(tick);
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (animationFrameRef.current)
+        cancelAnimationFrame(animationFrameRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, duration]);
+
+  return <span className={className}>{format(displayed)}</span>;
+}
+
 function App() {
   const [gross, setGross] = useState<string>("");
   const [period, setPeriod] = useState<Period>("month");
   const [includeChurch, setIncludeChurch] = useState<boolean>(false);
   const [municipalityId, setMunicipalityId] = useState<string>("koebenhavn");
-  const [customMunicipalRate, setCustomMunicipalRate] = useState<string>("");
-  const [municipalityQuery, setMunicipalityQuery] = useState<string>("");
   const [singleParent, setSingleParent] = useState<boolean>(false);
   const [commuteKm, setCommuteKm] = useState<string>("");
   const [workDays, setWorkDays] = useState<string>("226");
@@ -44,24 +90,27 @@ function App() {
   const [employeePensionRate, setEmployeePensionRate] = useState<string>("");
   const [applyStoreBededag, setApplyStoreBededag] = useState<boolean>(true);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [showBreakdown, setShowBreakdown] = useState<boolean>(false);
   const periodLabel = period === "month" ? "måned" : "år";
   const showPeriodValue = (annual: number) =>
     period === "month" ? annual / 12 : annual;
 
+  const selectedMunicipality = useMemo(
+    () => MUNICIPALITIES.find((m) => m.id === municipalityId),
+    [municipalityId]
+  );
+
   const result = useMemo(() => {
     const parsed = Number(gross.replace(/[^0-9.]/g, ""));
     if (!Number.isFinite(parsed) || parsed <= 0) return null;
-    const selected = MUNICIPALITIES.find((m) => m.id === municipalityId);
-    const municipalRateFromSelection = selected?.municipalTaxRate ?? 0.25;
-    const municipalRate = customMunicipalRate
-      ? Math.max(0, Math.min(1, Number(customMunicipalRate) / 100))
-      : municipalRateFromSelection;
+    const municipalRate = selectedMunicipality?.municipalTaxRate ?? 0.25;
 
     return computeTaxBreakdown({
       grossIncome: parsed,
       period,
       includeChurchTax: includeChurch,
       municipalTaxRate: municipalRate,
+      churchTaxRate: selectedMunicipality?.churchTaxRate,
       singleParent,
       commutingDistanceKmDaily: Number(commuteKm) || 0,
       commutingWorkingDaysAnnual: Number(workDays) || 226,
@@ -78,8 +127,7 @@ function App() {
     gross,
     period,
     includeChurch,
-    municipalityId,
-    customMunicipalRate,
+    selectedMunicipality,
     singleParent,
     commuteKm,
     workDays,
@@ -89,29 +137,50 @@ function App() {
     applyStoreBededag,
   ]);
 
-  const filteredMunicipalities = useMemo(() => {
-    const q = municipalityQuery
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim();
-    if (!q) return MUNICIPALITIES;
-    return MUNICIPALITIES.filter((m) =>
-      m.name
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .includes(q)
+  // Removed municipality search; show full list directly
+
+  const handlePeriodChange = (nextPeriod: Period) => {
+    if (nextPeriod === period) return;
+    const parsedGross = Number(gross.replace(/[^0-9.]/g, ""));
+    if (Number.isFinite(parsedGross) && parsedGross > 0) {
+      const convertedGross =
+        nextPeriod === "year" ? parsedGross * 12 : parsedGross / 12;
+      setGross(String(Math.round(convertedGross)));
+    }
+    setPeriod(nextPeriod);
+  };
+
+  const SignedAmount = ({
+    value,
+    variant,
+    bold = false,
+  }: {
+    value: number;
+    variant: "neg" | "pos" | "neutral" | "deduction";
+    bold?: boolean;
+  }) => {
+    const colorClass =
+      variant === "neg"
+        ? "text-red-600"
+        : variant === "pos"
+        ? "text-emerald-600"
+        : variant === "deduction"
+        ? "text-muted-foreground"
+        : "text-foreground";
+    const sign = variant === "neg" ? "-" : variant === "pos" ? "+" : "";
+    return (
+      <span className={cn("text-right", bold ? "font-medium" : "", colorClass)}>
+        {sign}
+        {formatDKK(showPeriodValue(value))}
+      </span>
     );
-  }, [municipalityQuery]);
+  };
 
   return (
     <div className="min-h-dvh w-full flex items-start justify-center p-6">
-      <Card className="w-full max-w-xl">
+      <Card className="w-full max-w-xl ring-4 ring-primary">
         <CardHeader>
-          <CardTitle className="text-3xl">
-            Dansk indkomstskatteberegner
-          </CardTitle>
+          <CardTitle className="text-3xl">Dansk lønberegner</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -134,14 +203,14 @@ function App() {
                 <Button
                   type="button"
                   variant={period === "month" ? "default" : "outline"}
-                  onClick={() => setPeriod("month")}
+                  onClick={() => handlePeriodChange("month")}
                   className="flex-1">
                   Måned
                 </Button>
                 <Button
                   type="button"
                   variant={period === "year" ? "default" : "outline"}
-                  onClick={() => setPeriod("year")}
+                  onClick={() => handlePeriodChange("year")}
                   className="flex-1">
                   År
                 </Button>
@@ -157,45 +226,18 @@ function App() {
                   <SelectValue placeholder="Vælg kommune" />
                 </SelectTrigger>
                 <SelectContent>
-                  <div className="p-1">
-                    <Input
-                      autoFocus
-                      placeholder="Søg kommune..."
-                      value={municipalityQuery}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setMunicipalityQuery(e.target.value)
-                      }
-                    />
-                  </div>
-                  {filteredMunicipalities.map((m) => (
+                  {MUNICIPALITIES.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       {m.name} ({formatPct(m.municipalTaxRate)})
                     </SelectItem>
                   ))}
-                  {filteredMunicipalities.length === 0 && (
-                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      Ingen resultater
-                    </div>
-                  )}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="customRate">Egen kommuneskat (%)</Label>
-              <Input
-                id="customRate"
-                inputMode="decimal"
-                type="text"
-                placeholder="Lad stå tom for at bruge valgte kommune"
-                value={customMunicipalRate}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setCustomMunicipalRate(e.target.value)
-                }
-              />
-            </div>
+            {/* Removed custom municipal override */}
           </div>
 
-          <div>
+          <div className="mb-0">
             <Button
               type="button"
               variant="outline"
@@ -210,7 +252,7 @@ function App() {
           <div
             className={cn(
               "grid transition-[grid-template-rows] duration-300 ease-out",
-              showAdvanced ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              showAdvanced ? "grid-rows-[1fr] mt-4" : "grid-rows-[0fr]"
             )}
             aria-hidden={!showAdvanced}>
             <div className="overflow-hidden">
@@ -224,7 +266,11 @@ function App() {
                     onChange={(e) => setIncludeChurch(e.target.checked)}
                   />
                   <Label htmlFor="church">
-                    Inkluder kirkeskat (ca. 0,66 %)
+                    Inkluder kirkeskat (
+                    {selectedMunicipality
+                      ? formatPct(selectedMunicipality.churchTaxRate)
+                      : "ca. 0,87 %"}
+                    )
                   </Label>
                 </div>
                 <div className="flex items-center gap-2">
@@ -322,7 +368,7 @@ function App() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="employeePensionRate">
-                      Egen pension (%)
+                      Eget pensionsbidrag (%)
                     </Label>
                     <Input
                       id="employeePensionRate"
@@ -342,9 +388,15 @@ function App() {
 
           {/* Results area with smooth expand from bottom */}
           {!result && (
-            <p className="text-sm text-muted-foreground">
-              Indtast din løn for at se resultatet.
-            </p>
+            <div
+              role="note"
+              className="flex items-start gap-2 rounded-md border bg-accent p-3 text-sm text-muted-foreground mb-0">
+              <Info
+                className="h-4 w-4 mt-0.5 text-foreground"
+                aria-hidden="true"
+              />
+              <div>Indtast din løn for at se resultatet.</div>
+            </div>
           )}
 
           <div
@@ -362,226 +414,334 @@ function App() {
                     : "opacity-0 translate-y-2",
                   "transition-all duration-300"
                 )}>
-                <div className="text-xs text-muted-foreground">
-                  Alle beløb er pr. {periodLabel}
-                </div>
-                <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Indkomst
-                </div>
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">
-                    Bruttoindkomst inkl. kompensation
-                  </span>
-                  <span className="text-right font-medium">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(result.basis.grossIncomeAnnual)
-                      )}
-                  </span>
-                </div>
+                {result && (
+                  <div className="group relative overflow-hidden rounded-lg border bg-accent px-4 py-3 shadow-sm ring-1 ring-primary/10">
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-primary/15 to-transparent [mask-image:radial-gradient(280px_140px_at_85%_40%,black,transparent_65%)]" />
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Nettoløn
+                    </div>
+                    <div className="mt-1 flex items-baseline justify-between">
+                      <AnimatedNumber
+                        className="text-3xl font-bold tracking-tight drop-shadow-sm inline-block"
+                        value={result.totals.netIncomePeriod}
+                        format={(n) => formatDKK(n)}
+                        duration={500}
+                      />
+                      <div className="text-right text-xs text-muted-foreground">
+                        <div>pr. {periodLabel}</div>
+                        <div className="mt-0.5">
+                          Reel skat:{" "}
+                          {formatPct(
+                            Math.max(
+                              0,
+                              Math.min(
+                                1,
+                                (result.taxes.totalTaxAnnual +
+                                  result.contributions.amContributionAnnual) /
+                                  Math.max(1, result.basis.grossIncomeAnnual)
+                              )
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowBreakdown((v) => !v)}
+                        aria-expanded={showBreakdown}
+                        className="w-full sm:w-auto mt-2">
+                        {showBreakdown ? "Skjul opdeling" : "Vis opdeling"}
+                      </Button>
+                    </div>
 
-                <div className="pt-2 border-t mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Bidrag (før skat)
-                </div>
-                {result &&
-                  result.contributions.employeePensionContributionAnnual >
-                    0 && (
-                    <div className="grid grid-cols-2 text-sm">
-                      <span className="text-muted-foreground">
-                        Egen pension
-                      </span>
-                      <span className="text-right">
-                        {formatDKK(
-                          showPeriodValue(
+                    <div
+                      className={cn(
+                        "grid transition-[grid-template-rows] duration-300 ease-out",
+                        showBreakdown ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                      )}
+                      aria-hidden={!showBreakdown}>
+                      <div className="overflow-hidden">
+                        <div className="mt-3 border-t pt-3">
+                          <div className="text-xs text-muted-foreground">
+                            Alle beløb er pr. {periodLabel}
+                          </div>
+                          <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                            Indkomst
+                          </div>
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="text-muted-foreground">
+                              Bruttoindkomst inkl. kompensation
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={result.basis.grossIncomeAnnual}
+                                variant="neutral"
+                                bold
+                              />
+                            )}
+                          </div>
+
+                          <div className="pt-2 border-t mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                            Bidrag (før skat)
+                          </div>
+                          {result &&
                             result.contributions
-                              .employeePensionContributionAnnual
-                          )
-                        )}
-                      </span>
-                    </div>
-                  )}
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">AM-bidrag (8 %)</span>
-                  <span className="text-right">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(
-                          result.contributions.amContributionAnnual
-                        )
-                      )}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">
-                    ATP (medarbejder)
-                  </span>
-                  <span className="text-right">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(
-                          result.contributions.atpEmployeeContributionAnnual
-                        )
-                      )}
-                  </span>
-                </div>
-                <div className="pt-2 border-t mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Fradrag
-                </div>
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">Personfradrag</span>
-                  <span className="text-right">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(
-                          result.deductions.personalAllowanceAnnual
-                        )
-                      )}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">
-                    Beskæftigelsesfradrag
-                  </span>
-                  <span className="text-right">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(
-                          result.deductions.employmentDeductionAnnual
-                        )
-                      )}
-                  </span>
-                </div>
-                {result && result.deductions.pensionContributionAnnual > 0 && (
-                  <div className="grid grid-cols-2 text-sm">
-                    <span className="text-muted-foreground">
-                      Pensionsfradrag
-                    </span>
-                    <span className="text-right">
-                      {formatDKK(
-                        showPeriodValue(
-                          result.deductions.pensionContributionAnnual
-                        )
-                      )}
-                    </span>
-                  </div>
-                )}
-                {result &&
-                  result.deductions.singleParentEmploymentSupplementAnnual >
-                    0 && (
-                    <div className="grid grid-cols-2 text-sm">
-                      <span className="text-muted-foreground">
-                        Ekstra beskæftigelsesfradrag (enlig)
-                      </span>
-                      <span className="text-right">
-                        {formatDKK(
-                          showPeriodValue(
+                              .employeePensionContributionAnnual > 0 && (
+                              <div className="grid grid-cols-2 text-sm">
+                                <span className="text-muted-foreground">
+                                  Eget pensionsbidrag
+                                </span>
+                                <SignedAmount
+                                  value={
+                                    result.contributions
+                                      .employeePensionContributionAnnual
+                                  }
+                                  variant="neg"
+                                />
+                              </div>
+                            )}
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="text-muted-foreground">
+                              ATP (medarbejder)
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={
+                                  result.contributions
+                                    .atpEmployeeContributionAnnual
+                                }
+                                variant="neg"
+                              />
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="text-muted-foreground">
+                              AM-bidrag (8 %)
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={
+                                  result.contributions.amContributionAnnual
+                                }
+                                variant="neg"
+                              />
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="font-medium">Bidrag i alt</span>
+                            {result && (
+                              <SignedAmount
+                                value={
+                                  result.contributions.amContributionAnnual +
+                                  result.contributions
+                                    .atpEmployeeContributionAnnual +
+                                  result.contributions
+                                    .employeePensionContributionAnnual
+                                }
+                                variant="neg"
+                                bold
+                              />
+                            )}
+                          </div>
+                          <div className="pt-2 border-t mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                            Fradrag
+                          </div>
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="text-muted-foreground">
+                              Personfradrag
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={
+                                  result.deductions.personalAllowanceAnnual
+                                }
+                                variant="deduction"
+                              />
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="text-muted-foreground">
+                              Beskæftigelsesfradrag
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={
+                                  result.deductions.employmentDeductionAnnual
+                                }
+                                variant="deduction"
+                              />
+                            )}
+                          </div>
+                          {result &&
+                            result.deductions.pensionContributionAnnual > 0 && (
+                              <div className="grid grid-cols-2 text-sm">
+                                <span className="text-muted-foreground">
+                                  Pensionsfradrag
+                                </span>
+                                <SignedAmount
+                                  value={
+                                    result.deductions.pensionContributionAnnual
+                                  }
+                                  variant="deduction"
+                                />
+                              </div>
+                            )}
+                          {result &&
                             result.deductions
-                              .singleParentEmploymentSupplementAnnual
-                          )
-                        )}
-                      </span>
-                    </div>
-                  )}
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">Jobfradrag</span>
-                  <span className="text-right">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(result.deductions.jobDeductionAnnual)
-                      )}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">
-                    Befordringsfradrag
-                  </span>
-                  <span className="text-right">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(
-                          result.deductions.commutingDeductionAnnual
-                        )
-                      )}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">Fradrag i alt</span>
-                  <span className="text-right">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(result.deductions.totalDeductionsAnnual)
-                      )}
-                  </span>
-                </div>
+                              .singleParentEmploymentSupplementAnnual > 0 && (
+                              <div className="grid grid-cols-2 text-sm">
+                                <span className="text-muted-foreground">
+                                  Ekstra beskæftigelsesfradrag (enlig)
+                                </span>
+                                <SignedAmount
+                                  value={
+                                    result.deductions
+                                      .singleParentEmploymentSupplementAnnual
+                                  }
+                                  variant="deduction"
+                                />
+                              </div>
+                            )}
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="text-muted-foreground">
+                              Jobfradrag
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={result.deductions.jobDeductionAnnual}
+                                variant="deduction"
+                              />
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="text-muted-foreground">
+                              Befordringsfradrag
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={
+                                  result.deductions.commutingDeductionAnnual
+                                }
+                                variant="deduction"
+                              />
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="font-medium">Fradrag i alt</span>
+                            {result && (
+                              <SignedAmount
+                                value={result.deductions.totalDeductionsAnnual}
+                                variant="deduction"
+                                bold
+                              />
+                            )}
+                          </div>
 
-                <div className="pt-2 border-t mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Skattepligtig indkomst
-                </div>
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">
-                    Skattepligtig indkomst
-                  </span>
-                  <span className="text-right">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(result.taxable.taxableIncomeAnnual)
-                      )}
-                  </span>
-                </div>
-                <div className="pt-2 border-t mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Skatter
-                </div>
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">Kommuneskat</span>
-                  <span className="text-right">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(result.taxes.municipalTaxAnnual)
-                      )}
-                  </span>
-                </div>
-                {includeChurch && result && (
-                  <div className="grid grid-cols-2 text-sm">
-                    <span className="text-muted-foreground">Kirkeskat</span>
-                    <span className="text-right">
-                      {formatDKK(showPeriodValue(result.taxes.churchTaxAnnual))}
-                    </span>
+                          <div className="pt-2 border-t mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                            Skattepligtig indkomst
+                          </div>
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="text-muted-foreground">
+                              Skattepligtig indkomst
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={result.taxable.taxableIncomeAnnual}
+                                variant="neutral"
+                                bold
+                              />
+                            )}
+                          </div>
+                          <div className="pt-2 border-t mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                            Skatter
+                          </div>
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="text-muted-foreground">
+                              Kommuneskat
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={result.taxes.municipalTaxAnnual}
+                                variant="neg"
+                              />
+                            )}
+                          </div>
+                          {includeChurch && result && (
+                            <div className="grid grid-cols-2 text-sm">
+                              <span className="text-muted-foreground">
+                                Kirkeskat
+                              </span>
+                              <SignedAmount
+                                value={result.taxes.churchTaxAnnual}
+                                variant="neg"
+                              />
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="text-muted-foreground">
+                              Bundskat (stat)
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={result.taxes.stateBottomTaxAnnual}
+                                variant="neg"
+                              />
+                            )}
+                          </div>
+                          {result && result.taxes.stateTopTaxAnnual > 0 && (
+                            <div className="grid grid-cols-2 text-sm">
+                              <span className="text-muted-foreground">
+                                Topskat (stat)
+                              </span>
+                              <SignedAmount
+                                value={result.taxes.stateTopTaxAnnual}
+                                variant="neg"
+                              />
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 text-sm">
+                            <span className="font-medium">Skat i alt</span>
+                            {result && (
+                              <SignedAmount
+                                value={result.taxes.totalTaxAnnual}
+                                variant="neg"
+                                bold
+                              />
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 border-t pt-3 text-sm">
+                            <span className="text-muted-foreground">
+                              Samlede skatter og bidrag
+                            </span>
+                            {result && (
+                              <SignedAmount
+                                value={
+                                  result.taxes.totalTaxAnnual +
+                                  result.contributions.amContributionAnnual +
+                                  result.contributions
+                                    .atpEmployeeContributionAnnual +
+                                  result.contributions
+                                    .employeePensionContributionAnnual
+                                }
+                                variant="neg"
+                                bold
+                              />
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 text-base">
+                            <span className="font-medium">Nettoløn</span>
+                            <span className="text-right font-semibold">
+                              {result &&
+                                formatDKK(result.totals.netIncomePeriod)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
-                <div className="grid grid-cols-2 text-sm">
-                  <span className="text-muted-foreground">Bundskat (stat)</span>
-                  <span className="text-right">
-                    {result &&
-                      formatDKK(
-                        showPeriodValue(result.taxes.stateBottomTaxAnnual)
-                      )}
-                  </span>
-                </div>
-                {result && result.taxes.stateTopTaxAnnual > 0 && (
-                  <div className="grid grid-cols-2 text-sm">
-                    <span className="text-muted-foreground">
-                      Topskat (stat)
-                    </span>
-                    <span className="text-right">
-                      {formatDKK(
-                        showPeriodValue(result.taxes.stateTopTaxAnnual)
-                      )}
-                    </span>
-                  </div>
-                )}
-                <div className="grid grid-cols-2 border-t pt-3 text-sm">
-                  <span className="text-muted-foreground">Samlede skatter</span>
-                  <span className="text-right font-medium">
-                    {result &&
-                      formatDKK(showPeriodValue(result.taxes.totalTaxAnnual))}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 text-base">
-                  <span className="font-medium">Nettoløn</span>
-                  <span className="text-right font-semibold">
-                    {result && formatDKK(result.totals.netIncomePeriod)}
-                  </span>
-                </div>
               </div>
             </div>
           </div>
