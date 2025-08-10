@@ -95,8 +95,8 @@ export function AdvancedSettings({
           <div className="relative">
             <Input
               id="commuteKm"
-              inputMode="text"
-              type="decimal"
+              inputMode="decimal"
+              type="text"
               placeholder="fx 60"
               value={commuteKm}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -116,8 +116,8 @@ export function AdvancedSettings({
           <div className="relative">
             <Input
               id="workDays"
-              inputMode="text"
-              type="decimal"
+              inputMode="decimal"
+              type="text"
               placeholder="226"
               value={workDays}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -159,8 +159,8 @@ export function AdvancedSettings({
           <div className="relative">
             <Input
               id="atpHours"
-              inputMode="text"
-              type="decimal"
+              inputMode="decimal"
+              type="text"
               placeholder="fx 160"
               value={atpHours}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -183,8 +183,8 @@ export function AdvancedSettings({
           <div className="relative">
             <Input
               id="employeePensionRate"
-              inputMode="text"
-              type="decimal"
+              inputMode="decimal"
+              type="text"
               placeholder="fx 12"
               value={employeePensionRate}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
