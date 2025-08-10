@@ -64,7 +64,7 @@ function App() {
   );
 
   const result = useMemo(() => {
-    const parsed = Number(gross.replace(/[^0-9.]/g, ""));
+    const parsed = Number(gross.replace(/\D+/g, ""));
     if (!Number.isFinite(parsed) || parsed <= 0) return null;
     const municipalRate = selectedMunicipality?.municipalTaxRate ?? 0.25;
 
@@ -104,7 +104,7 @@ function App() {
   const handlePeriodChange = (nextPeriod: Period, maybeConvertGross = true) => {
     if (nextPeriod === period) return;
     if (maybeConvertGross) {
-      const parsedGross = Number(gross.replace(/[^0-9.]/g, ""));
+      const parsedGross = Number(gross.replace(/\D+/g, ""));
       if (Number.isFinite(parsedGross) && parsedGross > 0) {
         const convertedGross =
           nextPeriod === "year" ? parsedGross * 12 : parsedGross / 12;

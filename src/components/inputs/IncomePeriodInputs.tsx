@@ -1,4 +1,5 @@
 import * as React from "react";
+import { formatNumberDa } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,19 @@ export function IncomePeriodInputs({
   onGrossChange: (value: string) => void;
   onPeriodChange: (next: Period, maybeConvertGross?: boolean) => void;
 }) {
+  const handleGrossChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    // Keep only digits
+    const digitsOnly = raw.replace(/\D+/g, "");
+    onGrossChange(digitsOnly);
+  };
+
+  const displayGross = React.useMemo(() => {
+    if (!gross) return "";
+    const n = Number(gross);
+    if (!Number.isFinite(n)) return gross;
+    return formatNumberDa(n);
+  }, [gross]);
   const handlePeriodClick = (next: Period) => {
     onPeriodChange(next, true);
   };
@@ -28,10 +42,8 @@ export function IncomePeriodInputs({
           inputMode="decimal"
           type="text"
           placeholder={period === "month" ? "fx 45.000" : "fx 540.000"}
-          value={gross}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onGrossChange(e.target.value)
-          }
+          value={displayGross}
+          onChange={handleGrossChange}
         />
       </div>
       <div className="space-y-2">

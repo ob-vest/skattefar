@@ -12,3 +12,9 @@ export function formatPct(rate: number): string {
     maximumFractionDigits: 2,
   }).format(rate);
 }
+
+export function formatNumberDa(value: number): string {
+  return new Intl.NumberFormat("da-DK", {
+    maximumFractionDigits: 0,
+  }).format(value);
+}
