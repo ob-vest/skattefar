@@ -19,7 +19,7 @@ function slugifyDk(input: string): string {
 
 type MunicipalitySource = { name: string; ratePct: number };
 
-// 2025 municipality tax rates (kommuneskat) as provided by user. Values are percentages.
+// 2025 municipality tax rates (kommuneskat). Values are percentages.
 const SOURCES: MunicipalitySource[] = [
   { name: "Albertslund", ratePct: 25.6 },
   { name: "Allerød", ratePct: 25.3 },
