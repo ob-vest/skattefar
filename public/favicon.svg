@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" text-rendering="geometricPrecision">
+  <rect x="22" y="8" width="34" height="22" rx="3" fill="#8FB5FF" stroke="#1E3A8A" stroke-width="2"/>
+  <rect x="14" y="16" width="34" height="22" rx="3" fill="#AFC7FF" stroke="#1E3A8A" stroke-width="2"/>
+  <rect x="8" y="24" width="34" height="22" rx="3" fill="#3B82F6" stroke="#1E3A8A" stroke-width="2"/>
+  <text x="25" y="35" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="14" fill="#FFFFFF" stroke="#0F172A" stroke-width="0.8" paint-order="stroke fill">500</text>
+</svg>

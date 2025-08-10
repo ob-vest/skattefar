@@ -2,6 +2,8 @@
 
 It calculates the tax and net salary for a given gross salary. This is intended to be used to get a ballpark figure for the tax and net salary, and is not intended to be used for precise calculations.
 
+Published at **[skattefar.invoke.dk](https://skattefar.invoke.dk)**.
+
 ## Setup
 
 ```bash
