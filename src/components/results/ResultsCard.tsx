@@ -11,11 +11,13 @@ export function ResultsCard({
   period,
   showBreakdown,
   onToggleBreakdown,
+  onSaveConfig,
 }: {
   result: TaxBreakdown | null;
   period: Period;
   showBreakdown: boolean;
   onToggleBreakdown: () => void;
+  onSaveConfig?: () => void;
 }) {
   const periodLabel = period === "month" ? "måned" : "år";
   const periodDivisor = period === "month" ? 12 : 1;
@@ -48,15 +50,20 @@ export function ResultsCard({
           <div className="mt-0.5">Reel skat: {formatPct(realTaxRate)}</div>
         </div>
       </div>
-      <div>
+      <div className="mt-2 flex gap-2 justify-end">
         <Button
           type="button"
           variant="outline"
           onClick={onToggleBreakdown}
           aria-expanded={showBreakdown}
-          className="w-full sm:w-auto mt-2">
+          className="sm:w-auto">
           {showBreakdown ? "Skjul opdeling" : "Vis opdeling"}
         </Button>
+        {onSaveConfig && (
+          <Button type="button" onClick={onSaveConfig} className="sm:w-auto">
+            Gem
+          </Button>
+        )}
       </div>
 
       <div

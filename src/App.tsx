@@ -1,7 +1,20 @@
-import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { computeTaxBreakdown, type Period } from "@/lib/tax";
+import {
+  DEFAULT_CONFIG,
+  type AppConfig,
+  loadLastConfig,
+  saveLastConfig,
+  areConfigsEqual,
+} from "@/lib/config";
 import { MUNICIPALITIES } from "@/lib/municipalities";
 import { cn } from "@/lib/utils";
 import { Info } from "lucide-react";
@@ -24,6 +37,24 @@ function App() {
   const [applyStoreBededag, setApplyStoreBededag] = useState<boolean>(true);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [showBreakdown, setShowBreakdown] = useState<boolean>(false);
+
+  const loadConfigFromStorage = () => loadLastConfig();
+
+  useEffect(() => {
+    const cfg = loadConfigFromStorage();
+    if (!cfg) return;
+    setGross(cfg.gross);
+    setPeriod(cfg.period);
+    setIncludeChurch(cfg.includeChurch);
+    setMunicipalityId(cfg.municipalityId);
+    setSingleParent(cfg.singleParent);
+    setCommuteKm(cfg.commuteKm);
+    setWorkDays(cfg.workDays);
+    setAtpSector(cfg.atpSector);
+    setAtpHours(cfg.atpHours);
+    setEmployeePensionRate(cfg.employeePensionRate);
+    setApplyStoreBededag(cfg.applyStoreBededag);
+  }, []);
 
   const selectedMunicipality = useMemo(
     () => MUNICIPALITIES.find((m) => m.id === municipalityId),
@@ -81,11 +112,81 @@ function App() {
     setPeriod(nextPeriod);
   };
 
+  const handleSaveConfig = () => {
+    const payload: AppConfig = {
+      gross,
+      period,
+      includeChurch,
+      municipalityId,
+      singleParent,
+      commuteKm,
+      workDays,
+      atpSector,
+      atpHours,
+      employeePensionRate,
+      applyStoreBededag,
+    };
+    saveLastConfig(payload);
+  };
+
+  const handleResetConfig = () => {
+    setGross(DEFAULT_CONFIG.gross);
+    setPeriod(DEFAULT_CONFIG.period);
+    setIncludeChurch(DEFAULT_CONFIG.includeChurch);
+    setMunicipalityId(DEFAULT_CONFIG.municipalityId);
+    setSingleParent(DEFAULT_CONFIG.singleParent);
+    setCommuteKm(DEFAULT_CONFIG.commuteKm);
+    setWorkDays(DEFAULT_CONFIG.workDays);
+    setAtpSector(DEFAULT_CONFIG.atpSector);
+    setAtpHours(DEFAULT_CONFIG.atpHours);
+    setEmployeePensionRate(DEFAULT_CONFIG.employeePensionRate);
+    setApplyStoreBededag(DEFAULT_CONFIG.applyStoreBededag);
+  };
+
+  const canReset = useMemo(() => {
+    const current: AppConfig = {
+      gross,
+      period,
+      includeChurch,
+      municipalityId,
+      singleParent,
+      commuteKm,
+      workDays,
+      atpSector,
+      atpHours,
+      employeePensionRate,
+      applyStoreBededag,
+    };
+    return !areConfigsEqual(current, DEFAULT_CONFIG);
+  }, [
+    gross,
+    period,
+    includeChurch,
+    municipalityId,
+    singleParent,
+    commuteKm,
+    workDays,
+    atpSector,
+    atpHours,
+    employeePensionRate,
+    applyStoreBededag,
+  ]);
+
   return (
     <div className="min-h-dvh w-full flex items-start justify-center p-6">
       <Card className="w-full max-w-xl ring-4 ring-primary">
         <CardHeader>
           <CardTitle className="text-3xl">Dansk lønberegner</CardTitle>
+          <CardAction>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleResetConfig}
+              disabled={!canReset}
+              className={cn(!canReset && "invisible")}>
+              Nulstil
+            </Button>
+          </CardAction>
         </CardHeader>
         <CardContent className="space-y-6">
           <IncomePeriodInputs
@@ -178,6 +279,7 @@ function App() {
                     period={period}
                     showBreakdown={showBreakdown}
                     onToggleBreakdown={() => setShowBreakdown((v) => !v)}
+                    onSaveConfig={handleSaveConfig}
                   />
                 )}
               </div>
