@@ -14,6 +14,7 @@ import {
   loadLastConfig,
   saveLastConfig,
   areConfigsEqual,
+  clearLastConfig,
 } from "@/lib/config";
 import { MUNICIPALITIES } from "@/lib/municipalities";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ import { IncomePeriodInputs } from "@/components/inputs/IncomePeriodInputs";
 import { MunicipalitySelect } from "@/components/inputs/MunicipalitySelect";
 import { AdvancedSettings } from "@/components/AdvancedSettings";
 import { ResultsCard } from "@/components/results/ResultsCard";
+import { toast } from "sonner";
 
 function App() {
   const [gross, setGross] = useState<string>("");
@@ -126,7 +128,9 @@ function App() {
       employeePensionRate,
       applyStoreBededag,
     };
-    saveLastConfig(payload);
+    const ok = saveLastConfig(payload);
+    if (ok) toast.success("Gemt!");
+    else toast.error("Kunne ikke gemme");
   };
 
   const handleResetConfig = () => {
@@ -141,6 +145,10 @@ function App() {
     setAtpHours(DEFAULT_CONFIG.atpHours);
     setEmployeePensionRate(DEFAULT_CONFIG.employeePensionRate);
     setApplyStoreBededag(DEFAULT_CONFIG.applyStoreBededag);
+    clearLastConfig();
+    toast.success(
+      "Nulstillet til standard og lokal data slettet (Hvis du havde gemt)"
+    );
   };
 
   const canReset = useMemo(() => {

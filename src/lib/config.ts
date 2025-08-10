@@ -79,14 +79,24 @@ export function loadLastConfig(): AppConfig | null {
   }
 }
 
-export function saveLastConfig(cfg: AppConfig): void {
+export function saveLastConfig(cfg: AppConfig): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+    return true;
   } catch {
-    // ignore storage errors
+    return false;
   }
 }
 
 export function areConfigsEqual(a: AppConfig, b: AppConfig): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+export function clearLastConfig(): boolean {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
 }
