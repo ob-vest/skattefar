@@ -4,6 +4,11 @@ It calculates the tax and net salary for a given gross salary. This is intended 
 
 Published at **[skattefar.invoke.dk](https://skattefar.invoke.dk)**
 
+## Sources
+
+- [Oversigt over kommuneskatter og bundskat](https://skm.dk/tal-og-metode/satser/oversigt-over-kommuneskatter)
+- [Oversigt over skatteværdi af fradrag](https://skm.dk/tal-og-metode/satser/skatte-og-afgiftsberegning/skattevaerdi-af-fradrag-i-2024)
+
 ## Setup
 
 ```bash

@@ -210,19 +210,39 @@ export function ResultsCard({
             </div>
 
             <div className="pt-2 border-t mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-              Skattepligtig indkomst
+              Skattegrundlag
             </div>
+
+            {/* Municipal/church taxable income. They are deducted the same way, for things we are accounting for. That's why they are the same. */}
             <div className="grid grid-cols-2 text-sm">
-              <span className="text-muted-foreground">
-                Skattepligtig indkomst
-              </span>
+              <span className="text-muted-foreground">Kommunal/kirkelig</span>
               <SignedAmount
-                value={result.taxable.taxableIncomeAnnual}
+                value={result.taxable.taxableMunicipalAnnual}
                 variant="neutral"
                 bold
                 periodDivisor={periodDivisor}
               />
             </div>
+            <div className="grid grid-cols-2 text-sm">
+              <span className="text-muted-foreground">Bundskat (stat)</span>
+              <SignedAmount
+                value={result.taxable.taxableBottomStateAnnual}
+                variant="neutral"
+                bold
+                periodDivisor={periodDivisor}
+              />
+            </div>
+            {result.taxable.taxableTopStateAnnual > 0 && (
+              <div className="grid grid-cols-2 text-sm">
+                <span className="text-muted-foreground">Topskat (stat)</span>
+                <SignedAmount
+                  value={result.taxable.taxableTopStateAnnual}
+                  variant="neutral"
+                  bold
+                  periodDivisor={periodDivisor}
+                />
+              </div>
+            )}
 
             <div className="pt-2 border-t mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
               Skatter

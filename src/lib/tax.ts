@@ -69,7 +69,9 @@ export interface TaxBreakdown {
     totalDeductionsAnnual: number; // sum of above
   };
   taxable: {
-    taxableIncomeAnnual: number; // after AM and personal allowance
+    taxableMunicipalAnnual: number; // after AM and all taxable-income-only deductions
+    taxableBottomStateAnnual: number; // after AM and personal-income deductions
+    taxableTopStateAnnual: number; // part of personal income above top threshold
     // kept for backward-compat: equals deductions.personalAllowanceAnnual
     personalAllowanceAnnual: number;
   };
@@ -223,14 +225,26 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
     commutingDeductionAnnual +
     pensionContributionAnnual;
 
-  // Taxable income for municipal, church and state bottom tax
-  const taxableIncomeAnnual = Math.max(
+  // Split taxable bases:
+  // - Municipal/church base includes deductions that can only be made in the taxable income
+  //   (e.g. employment deduction and commuting deduction)
+  // - Bottom state tax (bundskat) base excludes those, but includes deductions in personal income
+  const taxableMunicipalAnnual = Math.max(
+    0,
+    afterAMAnnual - totalDeductionsAnnual
+  );
+  const taxableChurchAnnual = Math.max(
     0,
     afterAMAnnual - totalDeductionsAnnual
   );
 
-  // State bottom tax on the full taxable income
-  const stateBottomTaxAnnual = taxableIncomeAnnual * bottomStateTaxRate;
+  const taxableBottomStateAnnual = Math.max(
+    0,
+    afterAMAnnual - (personalAllowanceAnnual + pensionContributionAnnual)
+  );
+
+  // State bottom tax is calculated on its own base (bundskat)
+  const stateBottomTaxAnnual = taxableBottomStateAnnual * bottomStateTaxRate;
 
   // State top tax only on amount above threshold
   // Top tax is calculated on personal income after AM and deductions in personal income (e.g., pension)
@@ -241,10 +255,10 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
   const topBase = Math.max(0, topPersonalIncomeAnnual - topTaxThresholdAnnual);
   const stateTopTaxAnnual = topBase * topStateTaxRate;
 
-  // Municipal and optional church tax on taxable income
-  const municipalTaxAnnual = taxableIncomeAnnual * municipalTaxRate;
+  // Municipal and optional church tax on municipal taxable income
+  const municipalTaxAnnual = taxableMunicipalAnnual * municipalTaxRate;
   const churchTaxAnnual = includeChurchTax
-    ? taxableIncomeAnnual * churchTaxRate
+    ? taxableChurchAnnual * churchTaxRate
     : 0;
 
   const totalTaxAnnual =
@@ -288,7 +302,9 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
       totalDeductionsAnnual,
     },
     taxable: {
-      taxableIncomeAnnual,
+      taxableMunicipalAnnual,
+      taxableBottomStateAnnual,
+      taxableTopStateAnnual: topBase,
       personalAllowanceAnnual,
     },
     taxes: {
