@@ -23,6 +23,7 @@ import { IncomePeriodInputs } from "@/components/inputs/IncomePeriodInputs";
 import { MunicipalitySelect } from "@/components/inputs/MunicipalitySelect";
 import { YearSelect } from "@/components/inputs/YearSelect";
 import { AdvancedSettings } from "@/components/AdvancedSettings";
+import { YearChangesNote } from "@/components/YearChangesNote";
 import { ResultsCard } from "@/components/results/ResultsCard";
 import { toast } from "sonner";
 
@@ -41,6 +42,7 @@ function App() {
   const [applyStoreBededag, setApplyStoreBededag] = useState<boolean>(true);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [showBreakdown, setShowBreakdown] = useState<boolean>(false);
+  const [showYearChanges, setShowYearChanges] = useState<boolean>(false);
 
   const loadConfigFromStorage = () => loadLastConfig();
 
@@ -232,7 +234,7 @@ function App() {
             />
           </div>
 
-          <div className="mb-0">
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="outline"
@@ -241,6 +243,15 @@ function App() {
               {showAdvanced
                 ? "Skjul avancerede indstillinger"
                 : "Vis avancerede indstillinger"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowYearChanges((v) => !v)}
+              className="w-full sm:w-auto">
+              {showYearChanges
+                ? "Skjul 2026-ændringer"
+                : "Vis ændringer fra 2025 til 2026"}
             </Button>
           </div>
 
@@ -252,6 +263,7 @@ function App() {
             aria-hidden={!showAdvanced}>
             <div className="overflow-hidden">
               <AdvancedSettings
+                key="advanced"
                 taxYear={taxYear}
                 includeChurch={includeChurch}
                 onIncludeChurch={setIncludeChurch}
@@ -271,6 +283,17 @@ function App() {
                 employeePensionRate={employeePensionRate}
                 onEmployeePensionRate={setEmployeePensionRate}
               />
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              "grid transition-[grid-template-rows] duration-300 ease-out",
+              showYearChanges ? "grid-rows-[1fr] mt-4" : "grid-rows-[0fr]"
+            )}
+            aria-hidden={!showYearChanges}>
+            <div className="overflow-hidden">
+              <YearChangesNote selectedMunicipalityId={municipalityId} />
             </div>
           </div>
 
