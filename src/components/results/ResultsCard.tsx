@@ -232,11 +232,35 @@ export function ResultsCard({
                 periodDivisor={periodDivisor}
               />
             </div>
+            {result.taxable.taxableMiddleStateAnnual > 0 && (
+              <div className="grid grid-cols-2 text-sm">
+                <span className="text-muted-foreground">Mellemskat (stat)</span>
+                <SignedAmount
+                  value={result.taxable.taxableMiddleStateAnnual}
+                  variant="neutral"
+                  bold
+                  periodDivisor={periodDivisor}
+                />
+              </div>
+            )}
             {result.taxable.taxableTopStateAnnual > 0 && (
               <div className="grid grid-cols-2 text-sm">
                 <span className="text-muted-foreground">Topskat (stat)</span>
                 <SignedAmount
                   value={result.taxable.taxableTopStateAnnual}
+                  variant="neutral"
+                  bold
+                  periodDivisor={periodDivisor}
+                />
+              </div>
+            )}
+            {result.taxable.taxableTopTopStateAnnual > 0 && (
+              <div className="grid grid-cols-2 text-sm">
+                <span className="text-muted-foreground">
+                  Top-topskat (stat)
+                </span>
+                <SignedAmount
+                  value={result.taxable.taxableTopTopStateAnnual}
                   variant="neutral"
                   bold
                   periodDivisor={periodDivisor}
@@ -273,12 +297,46 @@ export function ResultsCard({
                 periodDivisor={periodDivisor}
               />
             </div>
+            {result.taxes.stateMiddleTaxAnnual > 0 && (
+              <div className="grid grid-cols-2 text-sm">
+                <span className="text-muted-foreground">Mellemskat (stat)</span>
+                <SignedAmount
+                  value={result.taxes.stateMiddleTaxAnnual}
+                  variant="neg"
+                  periodDivisor={periodDivisor}
+                />
+              </div>
+            )}
             {result.taxes.stateTopTaxAnnual > 0 && (
               <div className="grid grid-cols-2 text-sm">
                 <span className="text-muted-foreground">Topskat (stat)</span>
                 <SignedAmount
                   value={result.taxes.stateTopTaxAnnual}
                   variant="neg"
+                  periodDivisor={periodDivisor}
+                />
+              </div>
+            )}
+            {result.taxes.stateTopTopTaxAnnual > 0 && (
+              <div className="grid grid-cols-2 text-sm">
+                <span className="text-muted-foreground">
+                  Top-topskat (stat)
+                </span>
+                <SignedAmount
+                  value={result.taxes.stateTopTopTaxAnnual}
+                  variant="neg"
+                  periodDivisor={periodDivisor}
+                />
+              </div>
+            )}
+            {result.taxes.skatteloftNedslagAnnual > 0 && (
+              <div className="grid grid-cols-2 text-sm">
+                <span className="text-muted-foreground">
+                  Skatteloft-nedslag
+                </span>
+                <SignedAmount
+                  value={result.taxes.skatteloftNedslagAnnual}
+                  variant="deduction"
                   periodDivisor={periodDivisor}
                 />
               </div>

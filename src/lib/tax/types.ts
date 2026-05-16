@@ -1,35 +1,56 @@
+import type { TaxYear } from "./years";
+
 export type Period = "year" | "month";
 
 export interface TaxInput {
   grossIncome: number; // in DKK, for the selected period
   period: Period;
+
+  // Income year — determines default rates, thresholds, ATP table, etc.
+  taxYear?: TaxYear;
+
   municipalTaxRate?: number; // 0-1, default 0.25
   includeChurchTax?: boolean; // default false
   churchTaxRate?: number; // 0-1, default 0.0066
-  amContributionRate?: number; // 0-1, default 0.08
-  bottomStateTaxRate?: number; // 0-1, default 0.121
-  topStateTaxRate?: number; // 0-1, default 0.15
-  topTaxThresholdAnnual?: number; // in DKK/year, default 588900
-  personalAllowanceAnnual?: number; // in DKK/year, default 51,600
+  amContributionRate?: number; // 0-1
+  bottomStateTaxRate?: number; // 0-1 (bundskat)
+
+  // Mellemskat (introduced 2026)
+  middleStateTaxRate?: number; // 0-1
+  middleStateTaxThresholdAnnual?: number; // DKK/year
+
+  topStateTaxRate?: number; // 0-1
+  topTaxThresholdAnnual?: number; // DKK/year
+
+  // Top-topskat (introduced 2026)
+  topTopStateTaxRate?: number; // 0-1
+  topTopStateTaxThresholdAnnual?: number; // DKK/year
+
+  // Skatteloft (horisontal tax ceiling, personal income, excl. AM + church)
+  skatteloftMiddle?: number; // 0-1 (only applies when middle bracket active)
+  skatteloftTop?: number; // 0-1
+  skatteloftTopTop?: number; // 0-1 (only applies when top-top bracket active)
+
+  personalAllowanceAnnual?: number; // DKK/year
 
   // Deductions
   applyEmploymentDeduction?: boolean; // Employment deduction (beskæftigelsesfradrag), default true
-  employmentDeductionRate?: number; // ~0.123 in 2025
-  employmentDeductionCapAnnual?: number; // ~55_600 in 2025
+  employmentDeductionRate?: number;
+  employmentDeductionCapAnnual?: number;
   singleParent?: boolean; // Single parent
-  singleParentEmploymentSupplementRate?: number; // ~0.115 in 2025
-  singleParentEmploymentSupplementCapAnnual?: number; // ~48_300 in 2025
+  singleParentEmploymentSupplementRate?: number;
+  singleParentEmploymentSupplementCapAnnual?: number;
 
   applyJobDeduction?: boolean; // Job deduction (jobfradrag), default true
-  jobDeductionRate?: number; // ~0.045 in 2025
-  jobDeductionThresholdAnnual?: number; // ~224_500 in 2025
-  jobDeductionCapAnnual?: number; // ~2_900 in 2025
+  jobDeductionRate?: number;
+  jobDeductionThresholdAnnual?: number;
+  jobDeductionCapAnnual?: number;
 
   // Commuting deduction (Befordringsfradrag, pendlerfradrag)
   commutingDistanceKmDaily?: number; // total daily distance (round trip)
   commutingWorkingDaysAnnual?: number; // default 226
-  commutingRateLow?: number; // 25-120 km per day, DKK/km (2025 ~2.23)
-  commutingRateHigh?: number; // >120 km per day, DKK/km (2025 ~1.12)
+  commutingRateLow?: number; // 25-120 km per day, DKK/km
+  commutingRateHigh?: number; // >120 km per day, DKK/km
   commutingLowThresholdKm?: number; // 24 km
   commutingHighThresholdKm?: number; // 120 km
 
@@ -50,6 +71,7 @@ export interface TaxBreakdown {
     period: Period;
     grossIncomePeriod: number; // in selected period
     grossIncomeAnnual: number; // annualized (including compensation if applied)
+    taxYear: TaxYear;
   };
   contributions: {
     amContributionAnnual: number;
@@ -69,18 +91,23 @@ export interface TaxBreakdown {
     totalDeductionsAnnual: number; // sum of above
   };
   taxable: {
-    taxableMunicipalAnnual: number; // after AM and all taxable-income-only deductions
-    taxableBottomStateAnnual: number; // after AM and personal-income deductions
-    taxableTopStateAnnual: number; // part of personal income above top threshold
-    // kept for backward-compat: equals deductions.personalAllowanceAnnual
-    personalAllowanceAnnual: number;
+    taxableMunicipalAnnual: number; // skattepligtig indkomst
+    taxableBottomStateAnnual: number; // bundskat base
+    taxableMiddleStateAnnual: number; // mellemskat base (0 if bracket inactive)
+    taxableTopStateAnnual: number; // topskat base
+    taxableTopTopStateAnnual: number; // top-topskat base (0 if inactive)
+    personalAllowanceAnnual: number; // kept for backward compat
   };
   taxes: {
     municipalTaxAnnual: number;
     churchTaxAnnual: number;
     stateBottomTaxAnnual: number;
+    stateMiddleTaxAnnual: number; // 0 if mellemskat inactive
     stateTopTaxAnnual: number;
-    totalTaxAnnual: number; // all taxes (municipal + church + state bottom + state top)
+    stateTopTopTaxAnnual: number; // 0 if top-topskat inactive
+    totalTaxAnnual: number; // all taxes (municipal + church + state brackets)
+    // Skatteloft reductions actually applied to state bracket tax amounts
+    skatteloftNedslagAnnual: number;
   };
   totals: {
     netIncomeAnnual: number;

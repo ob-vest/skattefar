@@ -1,3 +1,7 @@
+import { SOURCES_2026 } from "./municipalities2026";
+import type { TaxYear } from "./tax/years";
+import { DEFAULT_TAX_YEAR } from "./tax/years";
+
 export interface Municipality {
   id: string;
   name: string;
@@ -5,23 +9,27 @@ export interface Municipality {
   churchTaxRate: number; // 0-1
 }
 
+export type MunicipalitySource = {
+  name: string;
+  ratePct: number;
+  churchRate: number;
+};
+
 function slugifyDk(input: string): string {
   return input
     .replace(/[Ææ]/g, "ae")
     .replace(/[Øø]/g, "oe")
     .replace(/[Åå]/g, "aa")
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
 
-type MunicipalitySource = { name: string; ratePct: number; churchRate: number };
-
 // 2025 municipality tax rates (kommuneskat) and church tax rates (kirkeskat).
 // Values are percentages.
-const SOURCES: MunicipalitySource[] = [
+const SOURCES_2025: MunicipalitySource[] = [
   { name: "Albertslund", ratePct: 25.6, churchRate: 0.8 },
   { name: "Allerød", ratePct: 25.3, churchRate: 0.58 },
   { name: "Assens", ratePct: 26.1, churchRate: 0.98 },
@@ -122,11 +130,25 @@ const SOURCES: MunicipalitySource[] = [
   { name: "Aarhus", ratePct: 24.52, churchRate: 0.74 },
 ];
 
-export const MUNICIPALITIES: Municipality[] = SOURCES.map(
-  ({ name, ratePct, churchRate }) => ({
+function buildMunicipalities(
+  sources: MunicipalitySource[]
+): Municipality[] {
+  return sources.map(({ name, ratePct, churchRate }) => ({
     id: slugifyDk(name),
     name,
     municipalTaxRate: ratePct / 100,
     churchTaxRate: (churchRate ?? 0.87) / 100, // default to national average 0.87% if missing
-  })
-);
+  }));
+}
+
+export const MUNICIPALITIES_2025: Municipality[] =
+  buildMunicipalities(SOURCES_2025);
+export const MUNICIPALITIES_2026: Municipality[] =
+  buildMunicipalities(SOURCES_2026);
+
+export function getMunicipalities(year: TaxYear): Municipality[] {
+  return year === 2025 ? MUNICIPALITIES_2025 : MUNICIPALITIES_2026;
+}
+
+// Backwards-compatible default export: the current (default) year's list.
+export const MUNICIPALITIES: Municipality[] = getMunicipalities(DEFAULT_TAX_YEAR);

@@ -6,16 +6,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MUNICIPALITIES } from "@/lib/municipalities";
+import { getMunicipalities } from "@/lib/municipalities";
 import { formatPct } from "@/lib/format";
+import type { TaxYear } from "@/lib/tax";
 
 export function MunicipalitySelect({
   municipalityId,
+  taxYear,
   onChange,
 }: {
   municipalityId: string;
+  taxYear: TaxYear;
   onChange: (id: string) => void;
 }) {
+  const municipalities = getMunicipalities(taxYear);
   return (
     <div className="space-y-2">
       <Label htmlFor="municipality">Kommune</Label>
@@ -24,7 +28,7 @@ export function MunicipalitySelect({
           <SelectValue placeholder="Vælg kommune" />
         </SelectTrigger>
         <SelectContent>
-          {MUNICIPALITIES.map((m) => (
+          {municipalities.map((m) => (
             <SelectItem key={m.id} value={m.id}>
               {m.name} ({formatPct(m.municipalTaxRate)})
             </SelectItem>

@@ -1,33 +1,41 @@
-export function computeTaxableMunicipalAnnual(
-  afterAMAnnual: number,
-  totalDeductionsAnnual: number
-): number {
-  return Math.max(0, afterAMAnnual - totalDeductionsAnnual);
-}
+// Tax bases per Personskattelovens §§ 5–7a.
+// personalIncomeAnnual = brutto − AM-bidrag − ATP − arbejdsmarkedsbidragspligtige
+//   pensionsindbetalinger (PSL §3).
+// For bracket taxes (bundskat, mellem, top, top-top) the relevant pension
+// contributions are *added back* (PSL §§7–7b). Bundskat additionally subtracts
+// personfradrag.
 
-export function computeTaxableBottomStateAnnual(
-  afterAMAnnual: number,
-  personalAllowanceAnnual: number,
-  pensionContributionAnnual: number
+export function computeTaxableMunicipalAnnual(
+  personalIncomeAnnual: number,
+  ligningsmaessigeFradragAnnual: number,
+  personalAllowanceAnnual: number
 ): number {
   return Math.max(
     0,
-    afterAMAnnual - (personalAllowanceAnnual + pensionContributionAnnual)
+    personalIncomeAnnual -
+      ligningsmaessigeFradragAnnual -
+      personalAllowanceAnnual
   );
 }
 
-export function computeTopTaxBaseAnnual(
-  afterAMAnnual: number,
-  employeePensionContributionAnnual: number,
-  topTaxThresholdAnnual: number
-): { topPersonalIncomeAnnual: number; topBaseAnnual: number } {
-  const topPersonalIncomeAnnual = Math.max(
+export function computeTaxableBundskatAnnual(
+  personalIncomeAnnual: number,
+  pensionAddBackAnnual: number,
+  personalAllowanceAnnual: number
+): number {
+  return Math.max(
     0,
-    afterAMAnnual - employeePensionContributionAnnual
+    personalIncomeAnnual + pensionAddBackAnnual - personalAllowanceAnnual
   );
-  const topBaseAnnual = Math.max(
+}
+
+export function computeBracketBaseAnnual(
+  personalIncomeAnnual: number,
+  pensionAddBackAnnual: number,
+  thresholdAnnual: number
+): number {
+  return Math.max(
     0,
-    topPersonalIncomeAnnual - topTaxThresholdAnnual
+    personalIncomeAnnual + pensionAddBackAnnual - thresholdAnnual
   );
-  return { topPersonalIncomeAnnual, topBaseAnnual };
 }

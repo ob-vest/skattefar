@@ -1,6 +1,8 @@
-import type { Period } from "@/lib/tax";
+import type { Period, TaxYear } from "@/lib/tax";
+import { DEFAULT_TAX_YEAR } from "@/lib/tax";
 
 export type AppConfig = {
+  taxYear: TaxYear;
   gross: string;
   period: Period;
   includeChurch: boolean;
@@ -15,6 +17,7 @@ export type AppConfig = {
 };
 
 export const DEFAULT_CONFIG: AppConfig = {
+  taxYear: DEFAULT_TAX_YEAR,
   gross: "",
   period: "month",
   includeChurch: false,
@@ -32,6 +35,10 @@ function coerceToAppConfig(value: unknown): AppConfig | null {
   if (typeof value !== "object" || value === null) return null;
   const data = value as Record<string, unknown>;
   const cfg: AppConfig = {
+    taxYear:
+      data.taxYear === 2025 || data.taxYear === 2026
+        ? (data.taxYear as TaxYear)
+        : DEFAULT_CONFIG.taxYear,
     gross: typeof data.gross === "string" ? data.gross : DEFAULT_CONFIG.gross,
     period:
       data.period === "year" || data.period === "month"

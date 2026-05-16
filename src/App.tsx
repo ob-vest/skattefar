@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { computeTaxBreakdown, type Period } from "@/lib/tax";
+import { computeTaxBreakdown, type Period, type TaxYear } from "@/lib/tax";
 import {
   DEFAULT_CONFIG,
   type AppConfig,
@@ -16,16 +16,18 @@ import {
   areConfigsEqual,
   clearLastConfig,
 } from "@/lib/config";
-import { MUNICIPALITIES } from "@/lib/municipalities";
+import { getMunicipalities } from "@/lib/municipalities";
 import { cn } from "@/lib/utils";
 import { Info } from "lucide-react";
 import { IncomePeriodInputs } from "@/components/inputs/IncomePeriodInputs";
 import { MunicipalitySelect } from "@/components/inputs/MunicipalitySelect";
+import { YearSelect } from "@/components/inputs/YearSelect";
 import { AdvancedSettings } from "@/components/AdvancedSettings";
 import { ResultsCard } from "@/components/results/ResultsCard";
 import { toast } from "sonner";
 
 function App() {
+  const [taxYear, setTaxYear] = useState<TaxYear>(DEFAULT_CONFIG.taxYear);
   const [gross, setGross] = useState<string>("");
   const [period, setPeriod] = useState<Period>("month");
   const [includeChurch, setIncludeChurch] = useState<boolean>(false);
@@ -45,6 +47,7 @@ function App() {
   useEffect(() => {
     const cfg = loadConfigFromStorage();
     if (!cfg) return;
+    setTaxYear(cfg.taxYear);
     setGross(cfg.gross);
     setPeriod(cfg.period);
     setIncludeChurch(cfg.includeChurch);
@@ -58,10 +61,20 @@ function App() {
     setApplyStoreBededag(cfg.applyStoreBededag);
   }, []);
 
+  const municipalities = useMemo(() => getMunicipalities(taxYear), [taxYear]);
+
   const selectedMunicipality = useMemo(
-    () => MUNICIPALITIES.find((m) => m.id === municipalityId),
-    [municipalityId]
+    () => municipalities.find((m) => m.id === municipalityId),
+    [municipalities, municipalityId]
   );
+
+  // If the selected municipality doesn't exist in the new year (rare —
+  // names are stable), fall back to København.
+  useEffect(() => {
+    if (!selectedMunicipality) {
+      setMunicipalityId("koebenhavn");
+    }
+  }, [selectedMunicipality]);
 
   const result = useMemo(() => {
     const parsed = Number(gross.replace(/\D+/g, ""));
@@ -71,6 +84,7 @@ function App() {
     return computeTaxBreakdown({
       grossIncome: parsed,
       period,
+      taxYear,
       includeChurchTax: includeChurch,
       municipalTaxRate: municipalRate,
       churchTaxRate: selectedMunicipality?.churchTaxRate,
@@ -89,6 +103,7 @@ function App() {
   }, [
     gross,
     period,
+    taxYear,
     includeChurch,
     selectedMunicipality,
     singleParent,
@@ -116,6 +131,7 @@ function App() {
 
   const handleSaveConfig = () => {
     const payload: AppConfig = {
+      taxYear,
       gross,
       period,
       includeChurch,
@@ -134,6 +150,7 @@ function App() {
   };
 
   const handleResetConfig = () => {
+    setTaxYear(DEFAULT_CONFIG.taxYear);
     setGross(DEFAULT_CONFIG.gross);
     setPeriod(DEFAULT_CONFIG.period);
     setIncludeChurch(DEFAULT_CONFIG.includeChurch);
@@ -153,6 +170,7 @@ function App() {
 
   const canReset = useMemo(() => {
     const current: AppConfig = {
+      taxYear,
       gross,
       period,
       includeChurch,
@@ -167,6 +185,7 @@ function App() {
     };
     return !areConfigsEqual(current, DEFAULT_CONFIG);
   }, [
+    taxYear,
     gross,
     period,
     includeChurch,
@@ -205,11 +224,12 @@ function App() {
           />
 
           <div className="grid gap-4 sm:grid-cols-2">
+            <YearSelect year={taxYear} onChange={setTaxYear} />
             <MunicipalitySelect
               municipalityId={municipalityId}
+              taxYear={taxYear}
               onChange={setMunicipalityId}
             />
-            {/* Reserved column for future custom overrides */}
           </div>
 
           <div className="mb-0">
@@ -232,6 +252,7 @@ function App() {
             aria-hidden={!showAdvanced}>
             <div className="overflow-hidden">
               <AdvancedSettings
+                taxYear={taxYear}
                 includeChurch={includeChurch}
                 onIncludeChurch={setIncludeChurch}
                 selectedMunicipalityId={municipalityId}

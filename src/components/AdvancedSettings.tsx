@@ -2,10 +2,12 @@ import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MUNICIPALITIES } from "@/lib/municipalities";
+import { getMunicipalities } from "@/lib/municipalities";
 import { formatPct } from "@/lib/format";
+import type { TaxYear } from "@/lib/tax";
 
 export function AdvancedSettings({
+  taxYear,
   includeChurch,
   onIncludeChurch,
   selectedMunicipalityId,
@@ -24,6 +26,7 @@ export function AdvancedSettings({
   employeePensionRate,
   onEmployeePensionRate,
 }: {
+  taxYear: TaxYear;
   includeChurch: boolean;
   onIncludeChurch: (v: boolean) => void;
   selectedMunicipalityId: string;
@@ -42,7 +45,7 @@ export function AdvancedSettings({
   employeePensionRate: string;
   onEmployeePensionRate: (v: string) => void;
 }) {
-  const selectedMunicipality = MUNICIPALITIES.find(
+  const selectedMunicipality = getMunicipalities(taxYear).find(
     (m) => m.id === selectedMunicipalityId
   );
 
