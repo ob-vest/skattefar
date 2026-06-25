@@ -155,12 +155,22 @@ export function YearChangesNote({
     {
       label: "Sats 25–120 km/dag",
       before: "2,23 kr./km",
-      after: "2,28 kr./km",
+      after: "3,17 kr./km",
     },
     {
       label: "Sats over 120 km/dag",
       before: "1,12 kr./km",
-      after: "1,14 kr./km",
+      after: "1,59 kr./km",
+    },
+    {
+      label: "Yderkommune (alle km)",
+      before: "2,47 kr./km",
+      after: "3,51 kr./km",
+    },
+    {
+      label: "Lavindkomsttillæg (maks.)",
+      before: formatThreshold(15_400),
+      after: formatThreshold(30_800),
     },
   ];
 
@@ -214,7 +224,16 @@ export function YearChangesNote({
       <Section title="Statsskat" rows={stateRows} />
       <Section title="Skatteloft (uden AM og kirke)" rows={skatteloftRows} />
       <Section title="Fradrag og beløb" rows={fradragRows} />
-      <Section title="Befordring" rows={befordringRows} />
+      <div className="space-y-1.5">
+        <Section title="Befordring" rows={befordringRows} />
+        <p className="text-xs text-muted-foreground">
+          Midlertidig forhøjelse vedtaget juni 2026, gælder hele indkomståret
+          2026. Yderkommune-satsen gælder for alle km over 24 (ingen reduktion
+          over 120 km) for de 25 udpegede yderkommuner og 10 småøer.
+          Lavindkomsttillægget er 64 % af befordringsfradraget og aftrappes fra
+          341.500 til 391.500 kr.
+        </p>
+      </div>
       <Section title="ATP-bidrag (medarbejder)" rows={atpRows} />
 
       {m26 && (

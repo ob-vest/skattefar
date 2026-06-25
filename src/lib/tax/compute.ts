@@ -5,6 +5,7 @@ import { computeEmployeePensionContributionAnnual } from "./pension";
 import { computeAMContributions } from "./am";
 import {
   computeCommutingDeductionAnnual,
+  computeCommutingLowIncomeSupplementAnnual,
   computeEmploymentDeductionAnnual,
   computeJobDeductionAnnual,
   computeSingleParentEmploymentSupplementAnnual,
@@ -58,6 +59,12 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
     commutingRateHigh = yr.commutingRateHigh,
     commutingLowThresholdKm = yr.commutingLowThresholdKm,
     commutingHighThresholdKm = yr.commutingHighThresholdKm,
+    commutingYderkommune = false,
+    commutingYderkommuneRate = yr.commutingYderkommuneRate,
+    commutingLowIncomeSupplementRate = yr.commutingLowIncomeSupplementRate,
+    commutingLowIncomeSupplementMaxAnnual = yr.commutingLowIncomeSupplementMaxAnnual,
+    commutingLowIncomeSupplementFullThresholdAnnual = yr.commutingLowIncomeSupplementFullThresholdAnnual,
+    commutingLowIncomeSupplementZeroThresholdAnnual = yr.commutingLowIncomeSupplementZeroThresholdAnnual,
 
     employeePensionRate = 0,
 
@@ -91,7 +98,7 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
   );
 
   // 4. AM-bidrag (8 % of brutto minus ATP minus pension).
-  const { amContributionAnnual } = computeAMContributions(
+  const { amBaseAnnual, amContributionAnnual } = computeAMContributions(
     grossIncomeAnnual,
     atpEmployeeContributionAnnual,
     employeePensionContributionAnnual,
@@ -143,15 +150,30 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
     commutingRateLow,
     commutingRateHigh,
     commutingLowThresholdKm,
-    commutingHighThresholdKm
+    commutingHighThresholdKm,
+    commutingYderkommune,
+    commutingYderkommuneRate
   );
+
+  // Ekstra befordringsfradrag for lav indkomst (LL §9C stk 4). The taper is
+  // based on the AM-bidrag-pligtige helårsindkomst (≈ AM-base).
+  const commutingLowIncomeSupplementAnnual =
+    computeCommutingLowIncomeSupplementAnnual(
+      commutingDeductionAnnual,
+      amBaseAnnual,
+      commutingLowIncomeSupplementRate,
+      commutingLowIncomeSupplementMaxAnnual,
+      commutingLowIncomeSupplementFullThresholdAnnual,
+      commutingLowIncomeSupplementZeroThresholdAnnual
+    );
 
   // Ligningsmæssige fradrag reduce skattepligtig indkomst (kommune + kirke).
   const ligningsmaessigeFradragAnnual =
     employmentDeductionAnnual +
     singleParentEmploymentSupplementAnnual +
     jobDeductionAnnual +
-    commutingDeductionAnnual;
+    commutingDeductionAnnual +
+    commutingLowIncomeSupplementAnnual;
 
   // 7. Skattepligtig indkomst (kommune + kirke) — personfradrag is applied
   //    by reducing the tax base.
@@ -233,6 +255,7 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
     singleParentEmploymentSupplementAnnual +
     jobDeductionAnnual +
     commutingDeductionAnnual +
+    commutingLowIncomeSupplementAnnual +
     employeePensionContributionAnnual;
 
   // 15. Net income.
@@ -268,6 +291,7 @@ export function computeTaxBreakdown(input: TaxInput): TaxBreakdown {
       singleParentEmploymentSupplementAnnual,
       jobDeductionAnnual,
       commutingDeductionAnnual,
+      commutingLowIncomeSupplementAnnual,
       pensionContributionAnnual: employeePensionContributionAnnual,
       totalDeductionsAnnual,
     },

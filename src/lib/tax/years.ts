@@ -4,6 +4,9 @@
 //  - skm.dk personskatteloven satser
 //  - skm.dk § 20 beløbsgrænser 2025-2026
 //  - sktst.dk befordringsfradrag 2026
+//  - skm.dk forhøjet befordringsfradrag (juni 2026, gælder hele indkomståret 2026)
+//  - info.skat.dk C.A.4.3.3.2.2 (yderkommuner/småøer, LL §9C stk 3, 10,75 % tillæg)
+//  - info.skat.dk C.A.4.3.3.2.3 (forhøjet befordringsfradrag for lav indkomst, LL §9C stk 4)
 //  - borger.dk ATP-satser 2026 (privat + offentlig virksomhed)
 
 export type TaxYear = 2025 | 2026;
@@ -46,6 +49,19 @@ export interface YearRates {
   commutingLowThresholdKm: number; // 24 km/day (no deduction below)
   commutingHighThresholdKm: number; // 120 km/day (split point)
 
+  // Yderkommune-sats (LL §9C stk 3 + 10,75 % tillæg, gældende 2024–2027):
+  // bosiddende i en af de 25 udpegede yderkommuner / 10 småøer bruger denne
+  // ene sats for ALLE km over 24/dag — ingen reduktion over 120 km.
+  commutingYderkommuneRate: number; // DKK/km
+
+  // Ekstra befordringsfradrag for personer med lav indkomst (LL §9C stk 4):
+  // tillæg = rate × det almindelige befordringsfradrag, dog højst maks-beløbet.
+  // Både procent og maks aftrappes lineært fra full- til zero-grænsen.
+  commutingLowIncomeSupplementRate: number; // fraction, fx 0,64
+  commutingLowIncomeSupplementMaxAnnual: number; // DKK loft
+  commutingLowIncomeSupplementFullThresholdAnnual: number; // fuldt tillæg under denne indkomst
+  commutingLowIncomeSupplementZeroThresholdAnnual: number; // bortfaldet ved/over denne indkomst
+
   // ATP full-time (≥117 h/month) employee monthly amount, in DKK
   atpEmployeeFulltimeMonthly: {
     private: number;
@@ -80,6 +96,14 @@ export const YEAR_RATES: Record<TaxYear, YearRates> = {
     commutingLowThresholdKm: 24,
     commutingHighThresholdKm: 120,
 
+    // Yderkommune: 2,23 × 1,1075 (10,75 % tillæg) ≈ 2,47 kr./km for alle km over 24.
+    commutingYderkommuneRate: 2.47,
+
+    commutingLowIncomeSupplementRate: 0.64,
+    commutingLowIncomeSupplementMaxAnnual: 15_400,
+    commutingLowIncomeSupplementFullThresholdAnnual: 325_800,
+    commutingLowIncomeSupplementZeroThresholdAnnual: 375_800,
+
     atpEmployeeFulltimeMonthly: {
       private: 99.0,
       public: 66.6,
@@ -112,10 +136,25 @@ export const YEAR_RATES: Record<TaxYear, YearRates> = {
     jobDeductionThresholdAnnual: 235_200,
     jobDeductionCapAnnual: 3_100,
 
-    commutingRateLow: 2.28,
-    commutingRateHigh: 1.14,
+    // Midlertidig forhøjelse af befordringsfradraget vedtaget juni 2026.
+    // Gælder for hele indkomståret 2026 (med tilbagevirkende kraft).
+    //  - 25..120 km/dag: 2,28 → 3,17 kr./km (+0,89)
+    //  - over 120 km/dag: 1,14 → 1,59 kr./km (+0,45)
+    // (Den særlige yderkommune-/lavindkomstforhøjelse modelleres ikke her.)
+    commutingRateLow: 3.17,
+    commutingRateHigh: 1.59,
     commutingLowThresholdKm: 24,
     commutingHighThresholdKm: 120,
+
+    // Yderkommune: 2,53 (2,28 × 1,1075) + 0,98 (juni-forhøjelse) = 3,51 kr./km
+    // for alle km over 24 — ingen reduktion over 120 km.
+    commutingYderkommuneRate: 3.51,
+
+    // Juni 2026: maks-beløbet for lavindkomsttillægget fordoblet 15.400 → 30.800.
+    commutingLowIncomeSupplementRate: 0.64,
+    commutingLowIncomeSupplementMaxAnnual: 30_800,
+    commutingLowIncomeSupplementFullThresholdAnnual: 341_500,
+    commutingLowIncomeSupplementZeroThresholdAnnual: 391_500,
 
     // In 2026 public-sector default A-bidrag equalized with private.
     atpEmployeeFulltimeMonthly: {

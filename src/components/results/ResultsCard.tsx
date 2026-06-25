@@ -199,6 +199,18 @@ export function ResultsCard({
                 periodDivisor={periodDivisor}
               />
             </div>
+            {result.deductions.commutingLowIncomeSupplementAnnual > 0 && (
+              <div className="grid grid-cols-2 text-sm">
+                <span className="text-muted-foreground">
+                  Ekstra befordringsfradrag (lav indkomst)
+                </span>
+                <SignedAmount
+                  value={result.deductions.commutingLowIncomeSupplementAnnual}
+                  variant="deduction"
+                  periodDivisor={periodDivisor}
+                />
+              </div>
+            )}
             <div className="grid grid-cols-2 text-sm">
               <span className="font-medium">Fradrag i alt</span>
               <SignedAmount

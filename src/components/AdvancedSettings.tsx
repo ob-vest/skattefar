@@ -17,6 +17,9 @@ export function AdvancedSettings({
   onApplyStoreBededag,
   commuteKm,
   onCommuteKm,
+  yderkommune,
+  onYderkommune,
+  municipalityIsYderkommune,
   workDays,
   onWorkDays,
   atpSector,
@@ -36,6 +39,9 @@ export function AdvancedSettings({
   onApplyStoreBededag: (v: boolean) => void;
   commuteKm: string;
   onCommuteKm: (v: string) => void;
+  yderkommune: boolean;
+  onYderkommune: (v: boolean | null) => void;
+  municipalityIsYderkommune: boolean;
   workDays: string;
   onWorkDays: (v: string) => void;
   atpSector: "private" | "public";
@@ -135,6 +141,28 @@ export function AdvancedSettings({
             </span>
           </div>
         </div>
+      </div>
+
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <input
+            id="yderkommune"
+            type="checkbox"
+            className="h-4 w-4 accent-foreground"
+            checked={yderkommune}
+            onChange={(e) => onYderkommune(e.target.checked)}
+          />
+          <Label htmlFor="yderkommune">
+            Bor i yderkommune / på omfattet småø
+          </Label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Fuld sats for alle km over 24 — ingen reduktion over 120 km (LL §9C
+          stk. 3).
+          {municipalityIsYderkommune
+            ? " Din kommune er en yderkommune."
+            : " Sæt kun flueben hvis du bor på en af de 10 omfattede småøer."}
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

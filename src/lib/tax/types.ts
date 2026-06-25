@@ -54,6 +54,16 @@ export interface TaxInput {
   commutingLowThresholdKm?: number; // 24 km
   commutingHighThresholdKm?: number; // 120 km
 
+  // Yderkommune/småø residence (LL §9C stk 3): full rate for all km over 24.
+  commutingYderkommune?: boolean;
+  commutingYderkommuneRate?: number; // DKK/km
+
+  // Extra commuting deduction for low income (LL §9C stk 4).
+  commutingLowIncomeSupplementRate?: number; // fraction of ordinary deduction
+  commutingLowIncomeSupplementMaxAnnual?: number; // DKK cap
+  commutingLowIncomeSupplementFullThresholdAnnual?: number; // full below this income
+  commutingLowIncomeSupplementZeroThresholdAnnual?: number; // zero at/above this income
+
   // ATP (Arbejdsmarkedets Tillægspension) – employee contribution
   atpSector?: "private" | "public"; // default "private"
   atpMonthlyHours?: number; // default 160 (full time)
@@ -87,6 +97,7 @@ export interface TaxBreakdown {
     singleParentEmploymentSupplementAnnual: number; // extra employment deduction (single parent)
     jobDeductionAnnual: number; // job deduction (jobfradrag)
     commutingDeductionAnnual: number; // commuting deduction (Befordringsfradrag)
+    commutingLowIncomeSupplementAnnual: number; // extra commuting deduction (low income, LL §9C stk 4)
     pensionContributionAnnual: number; // employee pension contribution (deduction)
     totalDeductionsAnnual: number; // sum of above
   };

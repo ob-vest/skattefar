@@ -7,7 +7,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { computeTaxBreakdown, type Period, type TaxYear } from "@/lib/tax";
+import {
+  computeTaxBreakdown,
+  isYderkommuneId,
+  type Period,
+  type TaxYear,
+} from "@/lib/tax";
 import {
   DEFAULT_CONFIG,
   type AppConfig,
@@ -35,6 +40,9 @@ function App() {
   const [municipalityId, setMunicipalityId] = useState<string>("koebenhavn");
   const [singleParent, setSingleParent] = useState<boolean>(false);
   const [commuteKm, setCommuteKm] = useState<string>("");
+  const [commutingYderkommune, setCommutingYderkommune] = useState<
+    boolean | null
+  >(DEFAULT_CONFIG.commutingYderkommune);
   const [workDays, setWorkDays] = useState<string>("226");
   const [atpSector, setAtpSector] = useState<"private" | "public">("private");
   const [atpHours, setAtpHours] = useState<string>("160");
@@ -56,6 +64,7 @@ function App() {
     setMunicipalityId(cfg.municipalityId);
     setSingleParent(cfg.singleParent);
     setCommuteKm(cfg.commuteKm);
+    setCommutingYderkommune(cfg.commutingYderkommune);
     setWorkDays(cfg.workDays);
     setAtpSector(cfg.atpSector);
     setAtpHours(cfg.atpHours);
@@ -69,6 +78,15 @@ function App() {
     () => municipalities.find((m) => m.id === municipalityId),
     [municipalities, municipalityId]
   );
+
+  // Whether the selected municipality is itself a designated yderkommune.
+  const municipalityIsYderkommune = isYderkommuneId(municipalityId);
+
+  // Effective yderkommune status: explicit override wins, otherwise auto-detect.
+  const effectiveYderkommune =
+    commutingYderkommune === null
+      ? municipalityIsYderkommune
+      : commutingYderkommune;
 
   // If the selected municipality doesn't exist in the new year (rare —
   // names are stable), fall back to København.
@@ -93,6 +111,7 @@ function App() {
       singleParent,
       commutingDistanceKmDaily: Number(commuteKm) || 0,
       commutingWorkingDaysAnnual: Number(workDays) || 226,
+      commutingYderkommune: effectiveYderkommune,
       atpSector,
       atpMonthlyHours: Number(atpHours) || 0,
       employeePensionRate: (() => {
@@ -110,12 +129,20 @@ function App() {
     selectedMunicipality,
     singleParent,
     commuteKm,
+    effectiveYderkommune,
     workDays,
     atpSector,
     atpHours,
     employeePensionRate,
     applyStoreBededag,
   ]);
+
+  // Changing residence municipality re-engages yderkommune auto-detection, so a
+  // manual override never silently outlives the municipality it was set for.
+  const handleMunicipalityChange = (nextId: string) => {
+    setMunicipalityId(nextId);
+    setCommutingYderkommune(null);
+  };
 
   // Convert gross when switching period if possible
   const handlePeriodChange = (nextPeriod: Period, maybeConvertGross = true) => {
@@ -140,6 +167,7 @@ function App() {
       municipalityId,
       singleParent,
       commuteKm,
+      commutingYderkommune,
       workDays,
       atpSector,
       atpHours,
@@ -159,6 +187,7 @@ function App() {
     setMunicipalityId(DEFAULT_CONFIG.municipalityId);
     setSingleParent(DEFAULT_CONFIG.singleParent);
     setCommuteKm(DEFAULT_CONFIG.commuteKm);
+    setCommutingYderkommune(DEFAULT_CONFIG.commutingYderkommune);
     setWorkDays(DEFAULT_CONFIG.workDays);
     setAtpSector(DEFAULT_CONFIG.atpSector);
     setAtpHours(DEFAULT_CONFIG.atpHours);
@@ -179,6 +208,7 @@ function App() {
       municipalityId,
       singleParent,
       commuteKm,
+      commutingYderkommune,
       workDays,
       atpSector,
       atpHours,
@@ -194,6 +224,7 @@ function App() {
     municipalityId,
     singleParent,
     commuteKm,
+    commutingYderkommune,
     workDays,
     atpSector,
     atpHours,
@@ -230,7 +261,7 @@ function App() {
             <MunicipalitySelect
               municipalityId={municipalityId}
               taxYear={taxYear}
-              onChange={setMunicipalityId}
+              onChange={handleMunicipalityChange}
             />
           </div>
 
@@ -274,6 +305,9 @@ function App() {
                 onApplyStoreBededag={setApplyStoreBededag}
                 commuteKm={commuteKm}
                 onCommuteKm={setCommuteKm}
+                yderkommune={effectiveYderkommune}
+                onYderkommune={setCommutingYderkommune}
+                municipalityIsYderkommune={municipalityIsYderkommune}
                 workDays={workDays}
                 onWorkDays={setWorkDays}
                 atpSector={atpSector}

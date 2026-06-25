@@ -1,12 +1,14 @@
 import { SOURCES_2026 } from "./municipalities2026";
 import type { TaxYear } from "./tax/years";
 import { DEFAULT_TAX_YEAR } from "./tax/years";
+import { isYderkommuneId } from "./tax/yderkommuner";
 
 export interface Municipality {
   id: string;
   name: string;
   municipalTaxRate: number; // 0-1
   churchTaxRate: number; // 0-1
+  yderkommune: boolean; // designated yderkommune (LL §9C stk 3)
 }
 
 export type MunicipalitySource = {
@@ -133,12 +135,16 @@ const SOURCES_2025: MunicipalitySource[] = [
 function buildMunicipalities(
   sources: MunicipalitySource[]
 ): Municipality[] {
-  return sources.map(({ name, ratePct, churchRate }) => ({
-    id: slugifyDk(name),
-    name,
-    municipalTaxRate: ratePct / 100,
-    churchTaxRate: (churchRate ?? 0.87) / 100, // default to national average 0.87% if missing
-  }));
+  return sources.map(({ name, ratePct, churchRate }) => {
+    const id = slugifyDk(name);
+    return {
+      id,
+      name,
+      municipalTaxRate: ratePct / 100,
+      churchTaxRate: (churchRate ?? 0.87) / 100, // default to national average 0.87% if missing
+      yderkommune: isYderkommuneId(id),
+    };
+  });
 }
 
 export const MUNICIPALITIES_2025: Municipality[] =

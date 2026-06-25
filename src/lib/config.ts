@@ -9,6 +9,9 @@ export type AppConfig = {
   municipalityId: string;
   singleParent: boolean;
   commuteKm: string;
+  // Yderkommune/småø override for befordringsfradrag. null = auto-detect from
+  // the selected municipality; true/false = explicit user choice.
+  commutingYderkommune: boolean | null;
   workDays: string;
   atpSector: "private" | "public";
   atpHours: string;
@@ -24,6 +27,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   municipalityId: "koebenhavn",
   singleParent: false,
   commuteKm: "",
+  commutingYderkommune: null,
   workDays: "226",
   atpSector: "private",
   atpHours: "160",
@@ -54,6 +58,12 @@ function coerceToAppConfig(value: unknown): AppConfig | null {
       typeof data.commuteKm === "string"
         ? (data.commuteKm as string)
         : DEFAULT_CONFIG.commuteKm,
+    commutingYderkommune:
+      data.commutingYderkommune === true
+        ? true
+        : data.commutingYderkommune === false
+          ? false
+          : null,
     workDays:
       typeof data.workDays === "string"
         ? (data.workDays as string)
